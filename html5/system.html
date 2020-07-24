@@ -1,0 +1,259 @@
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+.status {
+  margin-top: 5px;
+  text-align: center;
+  border: 3px solid black;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.feed {
+  margin-top: 5px;
+}
+.toggle {
+  margin-top: 5px;
+  text-align: center;
+  font-weight: bold;
+  font-family: Arial, Helvetica, sans-serif;
+}
+/* For mobile phones: */
+[class*="col-"] {
+  width: 100%;
+}
+
+@media only screen and (min-width: 600px) {
+  /* For tablets: */
+  .col-s-1 {width: 8.33%;}
+  .col-s-2 {width: 16.66%;}
+  .col-s-3 {width: 25%;}
+  .col-s-4 {width: 33.33%;}
+  .col-s-5 {width: 41.66%;}
+  .col-s-6 {width: 50%;}
+  .col-s-7 {width: 58.33%;}
+  .col-s-8 {width: 66.66%;}
+  .col-s-9 {width: 75%;}
+  .col-s-10 {width: 83.33%;}
+  .col-s-11 {width: 91.66%;}
+  .col-s-12 {width: 100%;}
+}
+@media only screen and (min-width: 768px) {
+  /* For desktop: */
+  .col-1 {width: 8.33%;}
+  .col-2 {width: 16.66%;}
+  .col-3 {width: 25%;}
+  .col-4 {width: 33.33%;}
+  .col-5 {width: 41.66%;}
+  .col-6 {width: 50%;}
+  .col-7 {width: 58.33%;}
+  .col-8 {width: 66.66%;}
+  .col-9 {width: 75%;}
+  .col-10 {width: 83.33%;}
+  .col-11 {width: 91.66%;}
+  .col-12 {width: 100%;}
+}
+</style>
+
+<script>
+ var deviceID = "Your_Device_ID";
+ var accessToken = "Your_Device_TOKEN";
+ var sysStat;
+ var doorStat;
+ var doorTimeout;
+ var cameraStat;
+function startTime() {
+  var today = new Date();
+  var dd = String(today.getDate()).padStart(2, '0');
+  var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+  var yyyy = today.getFullYear();
+  date = dd + '/' + mm + '/' + yyyy;
+  var h = ('0'+today.getHours()).substr(-2);
+  var m = today.getMinutes();
+  var s = today.getSeconds();
+  m = checkTime(m);
+  s = checkTime(s);
+  document.getElementById('date').innerHTML = date +" "+
+  h + ":" + m + ":" + s;
+  var t = setTimeout(startTime, 500);
+}
+function checkTime(i) {
+  if (i < 10) {i = "0" + i};
+  return i;
+}
+function checkStat() {
+ var requestURL = "https://api.particle.io/v1/devices/" +deviceID + "/checkSys/";
+ $.post( requestURL, { params: "1", access_token: accessToken }, function(data){
+	  if (Object.values(data)[3] == 1) {
+	      checkDoor();
+		  sysStat = "On";
+		  document.getElementById('toggleSys').innerHTML = "Turn Off Alarm System"
+		  document.getElementById('toggleSys').style.display = "block";
+	  } else {
+		  sysStat = "Off";
+		  document.getElementById('toggleSys').innerHTML = "Turn On Alarm System"
+		  document.getElementById('toggleSys').style.display = "block";
+	  }
+	  document.getElementById('sysStat').innerHTML = "Alarm System status: "+sysStat;
+    });
+	
+ var requestURL = "https://api.particle.io/v1/devices/" +deviceID + "/checkCam/";
+ $.post( requestURL, { params: "1", access_token: accessToken }, function(data){
+	  if (Object.values(data)[3] == 1) {
+		  cameraStat = "On";
+		  document.getElementById('toggleCam').innerHTML = "Turn Off Camera feed"
+		  document.getElementById('toggleCam').style.display = "block";
+		  document.getElementById('feedDiv').style.display = "block";
+		  setTimeout(function(){
+		  document.getElementById('camImg').src = "http://172.20.10.5:5000/"
+		  document.getElementById('toggleCam').disabled = false;}, 2000);
+	  } else {
+		  cameraStat = "Off";
+		  document.getElementById('toggleCam').innerHTML = "Turn On Camera feed"
+		  document.getElementById('toggleCam').style.display = "block";
+	  }
+    });
+ }
+ 
+function toggleSystem() {
+	if (sysStat == "On") {
+	  clearTimeout(doorTimeout);
+	  paramStr = 0;
+	  document.getElementById('toggleSys').innerHTML = "Turning Off..."
+	  document.getElementById('toggleSys').disabled = true;
+	  setTimeout(function() {document.getElementById('doorStat').innerHTML = ""; document.getElementById('toggleSys').disabled = false;}, 3500);
+	} else {
+	   document.getElementById('toggleSys').innerHTML = "Turning On..."
+	   document.getElementById('toggleSys').disabled = true;
+	   setTimeout(function() {document.getElementById('toggleSys').disabled = false;}, 3500);
+       checkDoor();
+	  paramStr = 1;
+	}
+	
+	var requestURL = "https://api.particle.io/v1/devices/" +deviceID + "/toggleSys/";
+	$.post( requestURL, { params: paramStr, access_token: accessToken }, function(data){
+	  console.log("System: " + Object.values(data)[3])
+	  if (Object.values(data)[3] == 1) {
+		  sysStat = "On";
+		  document.getElementById('toggleSys').innerHTML = "Turn Off Alarm System"
+		  document.getElementById('toggleSys').style.display = "block";
+	  } else {
+		  sysStat = "Off";
+		  document.getElementById('toggleSys').innerHTML = "Turn On Alarm System"
+		  document.getElementById('toggleSys').style.display = "block";
+	  }
+	  document.getElementById('sysStat').innerHTML = "Alarm System status: "+sysStat;
+    });
+ 
+}
+function checkDoor() {
+ var requestURL = "https://api.particle.io/v1/devices/" +deviceID + "/checkDoor/";
+ $.post( requestURL, { params: "1", access_token: accessToken }, function(data){
+      console.log("Door: " + Object.values(data)[3])
+	  if (Object.values(data)[3] == 1) {
+		  doorStat = "Open";
+		  document.getElementById('doorStat').innerHTML = "Door Status: " + doorStat
+		  document.getElementById('doorStat').style.color = "#FF0000";
+	  } else {
+		  doorStat = "Close";
+		  document.getElementById('doorStat').innerHTML = "Door Status: " + doorStat
+		  document.getElementById('doorStat').style.color = "#000000";
+	  }
+    });
+  doorTimeout = setTimeout(checkDoor, 3000);
+}
+function checkCameraFeed(){
+var request = new XMLHttpRequest();  
+request.open('GET', 'http://172.20.10.5:5000', true);
+request.onreadystatechange = function(){
+    if (request.readyState === 4){
+        if (request.status === 404) {  
+        return true;
+        }  
+        else
+        {
+        return false;
+        }
+    }
+};
+request.send();
+}
+
+
+function toggleCamera() {
+  	if (cameraStat == "On") {
+	  paramStr = 0;
+	  document.getElementById('toggleCam').innerHTML = "Turning Off...";
+	  document.getElementById('toggleCam').disabled = true;
+	  document.getElementById('feedDiv').style.display = "none";
+	} else {
+	   document.getElementById('toggleCam').innerHTML = "Turning On...";
+	   document.getElementById('toggleCam').disabled = true;
+	  paramStr = 1;
+	}
+  
+  
+  	var requestURL = "https://api.particle.io/v1/devices/" +deviceID + "/toggleCam/";
+	$.post( requestURL, { params: paramStr, access_token: accessToken }, function(data){
+	  console.log("System: " + Object.values(data)[3])
+	  if (Object.values(data)[3] == 1) {
+		  cameraStat = "On";
+		  document.getElementById('feedDiv').style.display = "block";
+		  setTimeout(function(){
+		  document.getElementById('toggleCam').innerHTML = "Turn Off Camera feed";
+		  document.getElementById('camImg').src = "http://172.20.10.5:5000/";
+		  document.getElementById('toggleCam').disabled = false;}, 8000);
+	  } else {
+		  cameraStat = "Off";
+		  document.getElementById('feedDiv').style.display = "none";
+	      document.getElementById('camImg').src = ""
+		  setTimeout(function() {
+		  document.getElementById('toggleCam').innerHTML = "Turn On Camera feed";
+		  document.getElementById('toggleCam').disabled = false;}, 3500);
+
+	  }
+    });
+  
+  
+}
+
+function imgError(image) 
+{
+    if (!image.hasOwnProperty('retryCount')){
+      image.retryCount = 0;
+    }
+
+    if (image.retryCount < 50){
+	      setTimeout(function (){
+          image.src += '?';
+          image.retryCount += 1;
+      }, 1000);
+    }
+}
+
+
+</script>
+
+</head>
+
+<body onload="startTime(); checkStat();">
+<div class="header">
+  <h3>System Dashboard</h3>
+</div>
+<div class="status">
+  <p id="date" >System Dashboard</p>
+  <p id="sysStat" >Alarm System status: checking...</p>
+  <p id="doorStat"></p>
+</div>
+
+<div class="toggle">
+
+<button class="button" onclick="toggleSystem()" id="toggleSys" style="display: none"></button>
+<button class="button" onclick="toggleCamera()" id="toggleCam" style="display: none">Turn On Camera Feed</button>
+</div>
+
+<div class="feed" id="feedDiv" style="display: none">
+<img id="camImg" style="max-width: 100%; max-height: 100%" onerror ="imgError(this);">
+</div>
+
+</body>
+</html>
